@@ -83,7 +83,6 @@
       background: #ff4d4f;
       color: #fff;
       margin-top: 0;
-      margin-left: 8px;
       cursor: pointer;
     }
     table {
@@ -112,12 +111,35 @@
       margin-bottom: 6px;
       font-size: 0.9rem;
       display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px;
+      border-radius: 8px;
+    }
+    .match-label {
+      flex: 1;
+    }
+    .match-row.correct {
+      background: #e6ffe6; /* verde chiaro */
+    }
+    .match-row.wrong {
+      background: #ffe6e6; /* rosso chiaro */
+    }
+    .match-header {
+      display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
     }
-    .match-label {
-      flex: 1;
+    .match-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .match-actions input[type="text"] {
+      max-width: 140px;
     }
     .text-error {
       color: #b00020;
@@ -344,6 +366,59 @@
       }
     }
 
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function escapeAttr(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    // valuta se il pronostico (1, X, 2, 1X, X2, 12) è corretto sul risultato
+    function valutaEsito(item) {
+      if (!item || !item.result || !item.pronostico) return 'unknown';
+
+      const res = item.result.trim().toUpperCase();
+      let pronRaw = (item.pronostico || '').toUpperCase();
+
+      // prendo solo il primo segno 1/X/2/1X/X2/12, ignorando il resto (es. "+ Multigol 1-4")
+      const mPron = pronRaw.match(/(1X|X2|12|1|X|2)/);
+      if (!mPron) return 'unknown';
+      const pron = mPron[1];
+
+      const m = res.match(/^(\d+)\s*[-:]\s*(\d+)$/);
+      if (!m) return 'unknown';
+
+      const gh = parseInt(m[1], 10);
+      const ga = parseInt(m[2], 10);
+      let esito;
+      if (gh > ga) esito = '1';
+      else if (gh < ga) esito = '2';
+      else esito = 'X';
+
+      let correct = false;
+      if (pron === '1' || pron === 'X' || pron === '2') {
+        correct = (pron === esito);
+      } else if (pron === '1X') {
+        correct = (esito === '1' || esito === 'X');
+      } else if (pron === 'X2') {
+        correct = (esito === 'X' || esito === '2');
+      } else if (pron === '12') {
+        correct = (esito === '1' || esito === '2');
+      } else {
+        return 'unknown';
+      }
+
+      return correct ? 'correct' : 'wrong';
+    }
+
     function renderStudioPartite() {
       const cont = document.getElementById('studioPartite');
       if (!cont) return;
@@ -357,10 +432,69 @@
       studioPartite.forEach((item, index) => {
         const safePartita = escapeHtml(item.partita || '');
         const safePron = escapeHtml(item.pronostico || '');
+        const note = item.note || '';
+        const result = item.result || '';
+
+        const noteText = note ? ' - Nota: ' + escapeHtml(note) : '';
+        const resultText = result ? ' - Risultato: ' + escapeHtml(result) : '';
+
+        const status = valutaEsito(item);
+        const statusClass = status === 'correct' ? 'correct' : (status === 'wrong' ? 'wrong' : '');
+
+        const showSaveNoteStyle = 'none';  // viene gestito da onNoteChange
+        const showSaveResultStyle = 'none'; // viene gestito da onResultChange
+
+        const noteControls = `
+          <span class="small">Nota:</span>
+          <input
+            type="text"
+            id="note-${index}"
+            placeholder="Aggiungi nota"
+            value="${escapeAttr(note)}"
+            oninput="onNoteChange(${index}, this.value)"
+          />
+          <button
+            type="button"
+            id="saveNote-${index}"
+            class="btn-secondary"
+            style="display:${showSaveNoteStyle}"
+            onclick="salvaNota(${index})"
+          >
+            Salva nota
+          </button>
+        `;
+
         html += `
-          <li>
-            <span class="match-label">${safePartita}: <strong>${safePron}</strong></span>
-            <button type="button" class="btn-delete" onclick="eliminaPartita(${index})">Elimina</button>
+          <li class="match-row ${statusClass}">
+            <div class="match-header">
+              <span class="match-label">
+                ${safePartita}: <strong>${safePron}</strong>${noteText}${resultText}
+              </span>
+            </div>
+            <div class="match-actions">
+              ${noteControls}
+              <span class="small">Risultato:</span>
+              <input
+                type="text"
+                id="result-${index}"
+                placeholder="Es: 2-1"
+                value="${escapeAttr(result)}"
+                oninput="onResultChange(${index}, this.value)"
+              />
+              <button
+                type="button"
+                id="saveResult-${index}"
+                class="btn-secondary"
+                style="display:${showSaveResultStyle}"
+                onclick="salvaRisultato(${index})"
+              >
+                Salva risultato
+              </button>
+
+              <button type="button" class="btn-delete" onclick="eliminaPartita(${index})">
+                Elimina
+              </button>
+            </div>
           </li>
         `;
       });
@@ -368,18 +502,39 @@
       cont.innerHTML = html;
     }
 
+    function onNoteChange(index, value) {
+      const btn = document.getElementById('saveNote-' + index);
+      if (!btn) return;
+      btn.style.display = value.trim().length > 0 ? 'inline-block' : 'none';
+    }
+
+    function salvaNota(index) {
+      const input = document.getElementById('note-' + index);
+      if (!input || !studioPartite[index]) return;
+      studioPartite[index].note = input.value.trim();
+      salvaStudioPartite();
+      renderStudioPartite();
+    }
+
+    function onResultChange(index, value) {
+      const btn = document.getElementById('saveResult-' + index);
+      if (!btn) return;
+      btn.style.display = value.trim().length > 0 ? 'inline-block' : 'none';
+    }
+
+    function salvaRisultato(index) {
+      const input = document.getElementById('result-' + index);
+      if (!input || !studioPartite[index]) return;
+      studioPartite[index].result = input.value.trim();
+      salvaStudioPartite();
+      renderStudioPartite();
+    }
+
     function eliminaPartita(index) {
       if (index < 0 || index >= studioPartite.length) return;
       studioPartite.splice(index, 1);
       salvaStudioPartite();
       renderStudioPartite();
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
     }
 
     function salvaPronostico() {
@@ -401,6 +556,8 @@
       studioPartite.push({
         partita,
         pronostico: manualPrediction,
+        note: '',
+        result: '',
         timestamp: Date.now()
       });
       salvaStudioPartite();
@@ -489,10 +646,6 @@
         }
       }
 
-      const q1P = p1 > 0 ? 1 / p1 : NaN;
-      const qXP = pDraw > 0 ? 1 / pDraw : NaN;
-      const q2P = p2 > 0 ? 1 / p2 : NaN;
-
       const pNoBTTS = 1 - pBTTS;
       const qBTTS = pBTTS > 0 ? 1 / pBTTS : NaN;
       const qNoBTTS = pNoBTTS > 0 ? 1 / pNoBTTS : NaN;
@@ -526,7 +679,7 @@
       /* OUTPUT ANALISI */
       let html = '';
 
-     html += `
+      html += `
         <div class="card">
           <h2>Percentuali Quote Reali</h2>
           <table>
