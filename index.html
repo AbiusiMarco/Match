@@ -57,7 +57,6 @@
       box-sizing: border-box;
     }
     button {
-      width: 100%;
       padding: 10px;
       font-size: 1rem;
       border: none;
@@ -69,6 +68,23 @@
     }
     button:active {
       opacity: 0.85;
+    }
+    .btn-full {
+      width: 100%;
+    }
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    .btn-delete {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      background: #ff4d4f;
+      color: #fff;
+      margin-top: 0;
+      margin-left: 8px;
+      cursor: pointer;
     }
     table {
       width: 100%;
@@ -87,72 +103,194 @@
       font-size: 0.8rem;
       color: #666;
     }
+    ul {
+      padding-left: 0;
+      margin: 0;
+      list-style: none;
+    }
+    li {
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .match-label {
+      flex: 1;
+    }
+    .text-error {
+      color: #b00020;
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+    .text-success {
+      color: #006400;
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+    /* Home box cliccabili */
+    .home-box {
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .home-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Match Analysis</h1>
 
-    <div class="card">
-      <h2>Quote reali 1 X 2</h2>
-      <div class="row">
-        <div class="field">
-          <label>Quota 1</label>
-          <input id="odd1" type="text" value="3,10" />
-        </div>
-        <div class="field">
-          <label>Quota X</label>
-          <input id="oddX" type="text" value="2,88" />
-        </div>
-        <div class="field">
-          <label>Quota 2</label>
-          <input id="odd2" type="text" value="2,60" />
-        </div>
+    <!-- HOME -->
+    <div id="homeScreen">
+      <div class="card home-box" onclick="showAnalysis()">
+        <h2>Analysis</h2>
+        <p class="small">
+          Inserisci le quote dei Bookmakers, gol fatti e gol subiti per ogni squadra e scopri l'analisi sulla partita.
+        </p>
+        <button type="button" class="btn-full">Vai ad Analysis</button>
+      </div>
+
+      <div class="card home-box" onclick="showStudio()">
+        <h2>Studio Partite</h2>
+        <p class="small">
+          Visualizza l'elenco delle partite studiate con il tuo pronostico manuale.
+        </p>
+        <button type="button" class="btn-full">Vai a Studio Partite</button>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Gol fatti e subiti – CASA</h2>
-      <div class="row">
-        <div class="field">
-          <label>Fatti</label>
-          <input id="homeGF" type="number" value="3" />
-        </div>
-        <div class="field">
-          <label>Subiti</label>
-          <input id="homeGA" type="number" value="7" />
-        </div>
-        <div class="field">
-          <label>Partite</label>
-          <input id="homeGames" type="number" value="6" />
+    <!-- ANALYSIS -->
+    <div id="analysisScreen" style="display:none;">
+      <button type="button" class="btn-secondary" onclick="showHome()">← Torna alla Home</button>
+
+      <!-- SQUADRE -->
+      <div class="card">
+        <h2>Squadre</h2>
+        <div class="row">
+          <div class="field">
+            <label>Squadra Casa</label>
+            <input id="teamHome" type="text" placeholder="Es: Lecce" />
+          </div>
+          <div class="field">
+            <label>Squadra Trasferta</label>
+            <input id="teamAway" type="text" placeholder="Es: Torino" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <h2>Gol fatti e subiti – TRASFERTA</h2>
-      <div class="row">
-        <div class="field">
-          <label>Fatti</label>
-          <input id="awayGF" type="number" value="5" />
+      <!-- PRONOSTICO MANUALE -->
+      <div class="card">
+        <h2>Pronostico Manuale</h2>
+        <div class="row">
+          <div class="field">
+            <label>Pronostico (es: 1, X, 2, 1X, GG, Over 2.5...)</label>
+            <input id="manualPrediction" type="text" placeholder="Es: 1X" />
+          </div>
         </div>
-        <div class="field">
-          <label>Subiti</label>
-          <input id="awayGA" type="number" value="10" />
-        </div>
-        <div class="field">
-          <label>Partite</label>
-          <input id="awayGames" type="number" value="6" />
+        <button type="button" onclick="salvaPronostico()">Salva pronostico</button>
+        <div id="manualMessage" class="small"></div>
+      </div>
+
+      <!-- QUOTE E DATI STORICI -->
+      <div class="card">
+        <h2>Quote reali 1 X 2</h2>
+        <div class="row">
+          <div class="field">
+            <label>Quota 1</label>
+            <input id="odd1" type="text" value="3,10" />
+          </div>
+          <div class="field">
+            <label>Quota X</label>
+            <input id="oddX" type="text" value="2,88" />
+          </div>
+          <div class="field">
+            <label>Quota 2</label>
+            <input id="odd2" type="text" value="2,60" />
+          </div>
         </div>
       </div>
+
+      <div class="card">
+        <h2>Gol fatti e subiti – CASA</h2>
+        <div class="row">
+          <div class="field">
+            <label>Fatti</label>
+            <input id="homeGF" type="number" value="3" />
+          </div>
+          <div class="field">
+            <label>Subiti</label>
+            <input id="homeGA" type="number" value="7" />
+          </div>
+          <div class="field">
+            <label>Partite</label>
+            <input id="homeGames" type="number" value="6" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Gol fatti e subiti – TRASFERTA</h2>
+        <div class="row">
+          <div class="field">
+            <label>Fatti</label>
+            <input id="awayGF" type="number" value="5" />
+          </div>
+          <div class="field">
+            <label>Subiti</label>
+            <input id="awayGA" type="number" value="10" />
+          </div>
+          <div class="field">
+            <label>Partite</label>
+            <input id="awayGames" type="number" value="6" />
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-full" onclick="calcola()">Analizza Partita</button>
+
+      <div id="risultati"></div>
     </div>
 
-    <button onclick="calcola()">Calcola mercati</button>
+    <!-- STUDIO PARTITE -->
+    <div id="studioScreen" style="display:none;">
+      <button type="button" class="btn-secondary" onclick="showHome()">← Torna alla Home</button>
 
-    <div id="risultati"></div>
+      <div class="card">
+        <h2>Studio Partite</h2>
+        <div id="studioPartite"></div>
+        <p class="small">
+          I pronostici vengono salvati dalla sezione <strong>Analysis</strong> tramite il box “Pronostico Manuale”.
+        </p>
+      </div>
+    </div>
   </div>
 
   <script>
+    /* ---------- NAVIGAZIONE SCHERMATE ---------- */
+    function showHome() {
+      document.getElementById('homeScreen').style.display = '';
+      document.getElementById('analysisScreen').style.display = 'none';
+      document.getElementById('studioScreen').style.display = 'none';
+    }
+
+    function showAnalysis() {
+      document.getElementById('homeScreen').style.display = 'none';
+      document.getElementById('analysisScreen').style.display = '';
+      document.getElementById('studioScreen').style.display = 'none';
+    }
+
+    function showStudio() {
+      document.getElementById('homeScreen').style.display = 'none';
+      document.getElementById('analysisScreen').style.display = 'none';
+      document.getElementById('studioScreen').style.display = '';
+      renderStudioPartite();
+    }
+
+    /* ---------- UTILITA' NUMERICHE ---------- */
     function parseNumber(str) {
       if (!str) return NaN;
       return parseFloat(str.replace(',', '.'));
@@ -183,6 +321,95 @@
       return x.toFixed(2).replace('.', ',');
     }
 
+    /* ---------- STUDIO PARTITE (LOCALSTORAGE) ---------- */
+    let studioPartite = [];
+
+    function caricaStudioPartite() {
+      try {
+        const data = localStorage.getItem('studioPartite');
+        if (data) {
+          studioPartite = JSON.parse(data) || [];
+        }
+      } catch (e) {
+        studioPartite = [];
+      }
+      renderStudioPartite();
+    }
+
+    function salvaStudioPartite() {
+      try {
+        localStorage.setItem('studioPartite', JSON.stringify(studioPartite));
+      } catch (e) {
+        // es. incognito: ignoro
+      }
+    }
+
+    function renderStudioPartite() {
+      const cont = document.getElementById('studioPartite');
+      if (!cont) return;
+
+      if (!studioPartite.length) {
+        cont.innerHTML = '<p class="small">Nessuna partita salvata.</p>';
+        return;
+      }
+
+      let html = '<ul>';
+      studioPartite.forEach((item, index) => {
+        const safePartita = escapeHtml(item.partita || '');
+        const safePron = escapeHtml(item.pronostico || '');
+        html += `
+          <li>
+            <span class="match-label">${safePartita}: <strong>${safePron}</strong></span>
+            <button type="button" class="btn-delete" onclick="eliminaPartita(${index})">Elimina</button>
+          </li>
+        `;
+      });
+      html += '</ul>';
+      cont.innerHTML = html;
+    }
+
+    function eliminaPartita(index) {
+      if (index < 0 || index >= studioPartite.length) return;
+      studioPartite.splice(index, 1);
+      salvaStudioPartite();
+      renderStudioPartite();
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function salvaPronostico() {
+      const teamHome = document.getElementById('teamHome').value.trim();
+      const teamAway = document.getElementById('teamAway').value.trim();
+      const manualPrediction = document.getElementById('manualPrediction').value.trim();
+      const msg = document.getElementById('manualMessage');
+
+      msg.textContent = '';
+      msg.className = 'small';
+
+      if (!teamHome || !teamAway || !manualPrediction) {
+        msg.textContent = 'Inserisci il nome di entrambe le squadre e il pronostico.';
+        msg.classList.add('text-error');
+        return;
+      }
+
+      const partita = `${teamHome} - ${teamAway}`;
+      studioPartite.push({
+        partita,
+        pronostico: manualPrediction,
+        timestamp: Date.now()
+      });
+      salvaStudioPartite();
+
+      msg.textContent = 'Pronostico salvato in "Studio Partite".';
+      msg.classList.add('text-success');
+    }
+
+    /* ---------- CALCOLO POISSON & BVS ---------- */
     function calcola() {
       const odd1 = parseNumber(document.getElementById('odd1').value);
       const oddX = parseNumber(document.getElementById('oddX').value);
@@ -252,12 +479,12 @@
       }
 
       if (total > 0) {
-        p1 /= total;
+        p1   /= total;
         pDraw /= total;
-        p2 /= total;
+        p2   /= total;
         pBTTS /= total;
         for (let idx = 0; idx < lines.length; idx++) {
-          pOver[idx] /= total;
+          pOver[idx]  /= total;
           pUnder[idx] /= total;
         }
       }
@@ -296,7 +523,7 @@
       const qXBVS = 100 / percXBVS;
       const q2BVS = 100 / perc2BVS;
 
-      /* OUTPUT */
+      /* OUTPUT ANALISI */
       let html = '';
 
       html += `
@@ -323,7 +550,6 @@
         </div>
       `;
 
-      /* ---- Doppia chance ---- */
       html += `
         <div class="card">
           <h2>Doppia Chance</h2>
@@ -377,6 +603,12 @@
 
       out.innerHTML = html;
     }
+
+    // carica lo storico all'avvio
+    document.addEventListener('DOMContentLoaded', () => {
+      caricaStudioPartite();
+      showHome();
+    });
   </script>
 </body>
 </html>
