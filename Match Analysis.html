@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Match Analysis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      color: #222;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    h2 {
+      font-size: 1.1rem;
+      margin: 16px 0 8px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .field {
+      flex: 1 1 0;
+      min-width: 90px;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+    }
+    label {
+      font-size: 0.8rem;
+      margin-bottom: 2px;
+    }
+    input[type="number"], input[type="text"] {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:active {
+      opacity: 0.85;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #e0e0e0;
+      text-align: right;
+    }
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+    .small {
+      font-size: 0.8rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Match Analysis</h1>
+
+    <div class="card">
+      <h2>Quote reali 1 X 2</h2>
+      <div class="row">
+        <div class="field">
+          <label>Quota 1</label>
+          <input id="odd1" type="text" value="3,10" />
+        </div>
+        <div class="field">
+          <label>Quota X</label>
+          <input id="oddX" type="text" value="2,88" />
+        </div>
+        <div class="field">
+          <label>Quota 2</label>
+          <input id="odd2" type="text" value="2,60" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Gol fatti e subiti – CASA</h2>
+      <div class="row">
+        <div class="field">
+          <label>Fatti</label>
+          <input id="homeGF" type="number" value="3" />
+        </div>
+        <div class="field">
+          <label>Subiti</label>
+          <input id="homeGA" type="number" value="7" />
+        </div>
+        <div class="field">
+          <label>Partite</label>
+          <input id="homeGames" type="number" value="6" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Gol fatti e subiti – TRASFERTA</h2>
+      <div class="row">
+        <div class="field">
+          <label>Fatti</label>
+          <input id="awayGF" type="number" value="5" />
+        </div>
+        <div class="field">
+          <label>Subiti</label>
+          <input id="awayGA" type="number" value="10" />
+        </div>
+        <div class="field">
+          <label>Partite</label>
+          <input id="awayGames" type="number" value="6" />
+        </div>
+      </div>
+    </div>
+
+    <button onclick="calcola()">Calcola mercati</button>
+
+    <div id="risultati"></div>
+  </div>
+
+  <script>
+    function parseNumber(str) {
+      if (!str) return NaN;
+      return parseFloat(str.replace(',', '.'));
+    }
+
+    function poisson(k, lambda) {
+      if (lambda <= 0) return 0;
+      let result = Math.exp(-lambda);
+      if (k === 0) return result;
+      for (let i = 1; i <= k; i++) {
+        result *= lambda / i;
+      }
+      return result;
+    }
+
+    function formatPercent(x) {
+      if (!Number.isFinite(x)) return "-";
+      return (x * 100).toFixed(2).replace('.', ',');
+    }
+
+    function formatPercentAlready(x) { // per BVS, che è già in %
+      if (!Number.isFinite(x)) return "-";
+      return x.toFixed(2).replace('.', ',');
+    }
+
+    function formatOdd(x) {
+      if (!Number.isFinite(x) || x <= 0) return "-";
+      return x.toFixed(2).replace('.', ',');
+    }
+
+    function calcola() {
+      const odd1 = parseNumber(document.getElementById('odd1').value);
+      const oddX = parseNumber(document.getElementById('oddX').value);
+      const odd2 = parseNumber(document.getElementById('odd2').value);
+
+      const homeGF = parseNumber(document.getElementById('homeGF').value);
+      const homeGA = parseNumber(document.getElementById('homeGA').value);
+      const homeGames = parseNumber(document.getElementById('homeGames').value);
+
+      const awayGF = parseNumber(document.getElementById('awayGF').value);
+      const awayGA = parseNumber(document.getElementById('awayGA').value);
+      const awayGames = parseNumber(document.getElementById('awayGames').value);
+
+      const out = document.getElementById('risultati');
+      out.innerHTML = '';
+
+      if (
+        !isFinite(odd1) || !isFinite(oddX) || !isFinite(odd2) ||
+        !isFinite(homeGF) || !isFinite(homeGA) || !isFinite(homeGames) ||
+        !isFinite(awayGF) || !isFinite(awayGA) || !isFinite(awayGames) ||
+        homeGames <= 0 || awayGames <= 0
+      ) {
+        out.innerHTML = '<div class="card"><strong>Errore:</strong> controlla che tutti i campi siano compilati correttamente.</div>';
+        return;
+      }
+
+      /* 1) Percentuali implicite da quote */
+      const r1 = 1 / odd1;
+      const rX = 1 / oddX;
+      const r2 = 1 / odd2;
+      const sumR = r1 + rX + r2;
+      const p1Real = r1 / sumR;
+      const pXReal = rX / sumR;
+      const p2Real = r2 / sumR;
+
+      /* 2) Lambda casa/trasferta per Poisson */
+      const lambdaHome = (homeGF / homeGames + awayGA / awayGames) / 2;
+      const lambdaAway = (awayGF / awayGames + homeGA / homeGames) / 2;
+
+      const maxGoals = 6;
+      let p1 = 0, pX2 = 0, p2 = 0;
+      let pBTTS = 0;
+      const lines = [0.5, 1.5, 2.5, 3.5];
+      const pOver = [0, 0, 0, 0];
+      const pUnder = [0, 0, 0, 0];
+      let total = 0;
+
+      for (let i = 0; i <= maxGoals; i++) {
+        const pHome = poisson(i, lambdaHome);
+        for (let j = 0; j <= maxGoals; j++) {
+          const pAway = poisson(j, lambdaAway);
+          const p = pHome * pAway;
+          total += p;
+
+          if (i > j) p1 += p;
+          else if (i === j) pX2 += p;
+          else p2 += p;
+
+          if (i > 0 && j > 0) pBTTS += p;
+
+          const sumGoals = i + j;
+          for (let idx = 0; idx < lines.length; idx++) {
+            if (sumGoals > lines[idx]) pOver[idx] += p;
+            else pUnder[idx] += p;
+          }
+        }
+      }
+
+      if (total > 0) {
+        p1 /= total;
+        pX2 /= total;
+        p2 /= total;
+        pBTTS /= total;
+        for (let idx = 0; idx < lines.length; idx++) {
+          pOver[idx] /= total;
+          pUnder[idx] /= total;
+        }
+      }
+
+      const q1P = p1 > 0 ? 1 / p1 : NaN;
+      const qXP = pX2 > 0 ? 1 / pX2 : NaN;
+      const q2P = p2 > 0 ? 1 / p2 : NaN;
+
+      const pNoBTTS = 1 - pBTTS;
+      const qBTTS = pBTTS > 0 ? 1 / pBTTS : NaN;
+      const qNoBTTS = pNoBTTS > 0 ? 1 / pNoBTTS : NaN;
+
+      /* 3) Formule BVS 2026 (come Foglio1 Excel) */
+      const AT9 = (homeGF + awayGA) / homeGames;
+      const AV9 = (awayGF + homeGA) / awayGames;
+      const AT11 = 95 / (AT9 + AV9);
+      const AT13 = AT11 * AT9;
+      const AV13 = AT11 * AV9;
+      const AW13 = 100 / oddX + 6;
+      const AT15 = 106 / (AT13 + AV13 + AW13);
+
+      const perc1BVS = AT13 * AT15;
+      const percXBVS = AW13 * AT15;
+      const perc2BVS = AV13 * AT15;
+
+      const q1BVS = 100 / perc1BVS;
+      const qXBVS = 100 / percXBVS;
+      const q2BVS = 100 / perc2BVS;
+
+      /* 4) Output HTML */
+      let html = '';
+
+      html += `
+        <div class="card">
+          <h2>Percentuali Quote Reali</h2>
+          <table>
+            <tr><th>Esito</th><th>Probabilità</th></tr>
+            <tr><td>1</td><td>${formatPercent(p1Real)} %</td></tr>
+            <tr><td>X</td><td>${formatPercent(pXReal)} %</td></tr>
+            <tr><td>2</td><td>${formatPercent(p2Real)} %</td></tr>
+          </table>
+        </div>
+      `;
+
+      html += `
+        <div class="card">
+          <h2>Percentuali Quote Teoriche</h2>
+          <table>
+            <tr><th>Esito</th><th>Percentuale</th><th>Quote Teoriche</th></tr>
+            <tr><td>1</td><td>${formatPercentAlready(perc1BVS)} %</td><td>${formatOdd(q1BVS)}</td></tr>
+            <tr><td>X</td><td>${formatPercentAlready(percXBVS)} %</td><td>${formatOdd(qXBVS)}</td></tr>
+            <tr><td>2</td><td>${formatPercentAlready(perc2BVS)} %</td><td>${formatOdd(q2BVS)}</td></tr>
+          </table>
+        </div>
+      `;
+     
+      html += `
+        <div class="card">
+          <h2>Gol / No Gol</h2>
+          <table>
+            <tr><th>Esito</th><th>Probabilità</th><th>Quota teorica</th></tr>
+            <tr><td>Gol (GG)</td><td>${formatPercent(pBTTS)} %</td><td>${formatOdd(qBTTS)}</td></tr>
+            <tr><td>No Gol (NG)</td><td>${formatPercent(pNoBTTS)} %</td><td>${formatOdd(qNoBTTS)}</td></tr>
+          </table>
+        </div>
+      `;
+
+      html += `
+        <div class="card">
+          <h2>Over / Under</h2>
+          <table>
+            <tr><th>Linea</th><th>Esito</th><th>Probabilità</th><th>Quota teorica</th></tr>
+      `;
+      for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx];
+        const pov = pOver[idx];
+        const pund = pUnder[idx];
+        const qov = pov > 0 ? 1 / pov : NaN;
+        const qun = pund > 0 ? 1 / pund : NaN;
+        html += `
+          <tr>
+            <td rowspan="2">${line.toFixed(1)}</td>
+            <td>Over</td>
+            <td>${formatPercent(pov)} %</td>
+            <td>${formatOdd(qov)}</td>
+          </tr>
+          <tr>
+            <td>Under</td>
+            <td>${formatPercent(pund)} %</td>
+            <td>${formatOdd(qun)}</td>
+          </tr>
+        `;
+      }
+      html += `</table></div>`;
+
+      out.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
