@@ -526,14 +526,14 @@
       /* OUTPUT ANALISI */
       let html = '';
 
-      html += `
+     html += `
         <div class="card">
           <h2>Percentuali Quote Reali</h2>
           <table>
-            <tr><th>Esito</th><th>Probabilità</th></tr>
-            <tr><td>1</td><td>${formatPercent(p1Real)} %</td></tr>
-            <tr><td>X</td><td>${formatPercent(pXReal)} %</td></tr>
-            <tr><td>2</td><td>${formatPercent(p2Real)} %</td></tr>
+            <tr><th>Esito</th><th>Probabilità</th><th>Quote reali</th></tr>
+            <tr><td>1</td><td>${formatPercent(p1Real)} %</td><td>${formatOdd(odd1)}</td></tr>
+            <tr><td>X</td><td>${formatPercent(pXReal)} %</td><td>${formatOdd(oddX)}</td></tr>
+            <tr><td>2</td><td>${formatPercent(p2Real)} %</td><td>${formatOdd(odd2)}</td></tr>
           </table>
         </div>
       `;
