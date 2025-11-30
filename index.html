@@ -147,7 +147,7 @@
       </div>
     </div>
 
-    <button onclick="calcola()">Calcola Partita</button>
+    <button onclick="calcola()">Calcola mercati</button>
 
     <div id="risultati"></div>
   </div>
@@ -173,7 +173,7 @@
       return (x * 100).toFixed(2).replace('.', ',');
     }
 
-    function formatPercentAlready(x) { // per BVS, che è già in %
+    function formatPercentAlready(x) { 
       if (!Number.isFinite(x)) return "-";
       return x.toFixed(2).replace('.', ',');
     }
@@ -218,12 +218,12 @@
       const pXReal = rX / sumR;
       const p2Real = r2 / sumR;
 
-      /* 2) Lambda casa/trasferta per Poisson */
+      /* 2) Lambda per Poisson */
       const lambdaHome = (homeGF / homeGames + awayGA / awayGames) / 2;
       const lambdaAway = (awayGF / awayGames + homeGA / homeGames) / 2;
 
       const maxGoals = 6;
-      let p1 = 0, pX2 = 0, p2 = 0;
+      let p1 = 0, pDraw = 0, p2 = 0;
       let pBTTS = 0;
       const lines = [0.5, 1.5, 2.5, 3.5];
       const pOver = [0, 0, 0, 0];
@@ -238,7 +238,7 @@
           total += p;
 
           if (i > j) p1 += p;
-          else if (i === j) pX2 += p;
+          else if (i === j) pDraw += p;
           else p2 += p;
 
           if (i > 0 && j > 0) pBTTS += p;
@@ -253,7 +253,7 @@
 
       if (total > 0) {
         p1 /= total;
-        pX2 /= total;
+        pDraw /= total;
         p2 /= total;
         pBTTS /= total;
         for (let idx = 0; idx < lines.length; idx++) {
@@ -263,14 +263,23 @@
       }
 
       const q1P = p1 > 0 ? 1 / p1 : NaN;
-      const qXP = pX2 > 0 ? 1 / pX2 : NaN;
+      const qXP = pDraw > 0 ? 1 / pDraw : NaN;
       const q2P = p2 > 0 ? 1 / p2 : NaN;
 
       const pNoBTTS = 1 - pBTTS;
       const qBTTS = pBTTS > 0 ? 1 / pBTTS : NaN;
       const qNoBTTS = pNoBTTS > 0 ? 1 / pNoBTTS : NaN;
 
-      /* 3) Formule BVS 2026 (come Foglio1 Excel) */
+      /* ---- DOPPIA CHANCE ---- */
+      const dc1X = p1 + pDraw;
+      const dc12 = p1 + p2;
+      const dcX2 = pDraw + p2;
+
+      const qDC1X = dc1X > 0 ? 1 / dc1X : NaN;
+      const qDC12 = dc12 > 0 ? 1 / dc12 : NaN;
+      const qDCX2 = dcX2 > 0 ? 1 / dcX2 : NaN;
+
+      /* 3) Formule BVS 2026 */
       const AT9 = (homeGF + awayGA) / homeGames;
       const AV9 = (awayGF + homeGA) / awayGames;
       const AT11 = 95 / (AT9 + AV9);
@@ -287,7 +296,7 @@
       const qXBVS = 100 / percXBVS;
       const q2BVS = 100 / perc2BVS;
 
-      /* 4) Output HTML */
+      /* OUTPUT */
       let html = '';
 
       html += `
@@ -313,7 +322,20 @@
           </table>
         </div>
       `;
-     
+
+      /* ---- Doppia chance ---- */
+      html += `
+        <div class="card">
+          <h2>Doppia Chance</h2>
+          <table>
+            <tr><th>Esito</th><th>Probabilità</th><th>Quota teorica</th></tr>
+            <tr><td>1X</td><td>${formatPercent(dc1X)} %</td><td>${formatOdd(qDC1X)}</td></tr>
+            <tr><td>12</td><td>${formatPercent(dc12)} %</td><td>${formatOdd(qDC12)}</td></tr>
+            <tr><td>X2</td><td>${formatPercent(dcX2)} %</td><td>${formatOdd(qDCX2)}</td></tr>
+          </table>
+        </div>
+      `;
+
       html += `
         <div class="card">
           <h2>Gol / No Gol</h2>
@@ -358,4 +380,3 @@
   </script>
 </body>
 </html>
-
